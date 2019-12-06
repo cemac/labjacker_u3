@@ -1,0 +1,12 @@
+# The pressure conversion can be set here, using an expression such as:
+#
+#   p = (2 * v) + 5
+#
+# Where v is the voltage reading from the device
+# If no value is specified, or if there is a problem reading the specified
+# conversion, then the default value is used:
+#
+#   p = (5.0221 * v) - 24.036
+#
+# Set the pressure conversion calculation:
+p = (5.0221 * v) - 24.036

@@ -11,6 +11,7 @@ U3 status is periodically logged to the specified log filewhere required.
 # Standard lib imports:
 import datetime
 import os
+import re
 import sys
 import time
 # Third party imports:
@@ -47,6 +48,35 @@ def connect_u3():
         u3_dev = None
     # Return u3_dev:
     return u3_dev
+
+def get_calibration(config_dir=None, config_file='calibration.txt'):
+    """
+    get_calibration
+
+    Read in calibration values from configuration file
+    Returns a dict of values if successful, else returns None
+    """
+    # Expect to find calibration in same directory as executable, if no
+    # config_dir is specified:
+    if not config_dir:
+        config_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    # Full path to config file:
+    config_path = os.path.sep.join([config_dir, config_file])
+    # Check config file exists:
+    if not os.path.exists(config_path):
+        return None
+    # Init calibration dict:
+    calibration = {}
+    # Try to read config file:
+    try:
+        with open(config_path, 'r') as cf:
+            for cl in cf.readlines():
+                if re.match(r'^\s?p\s?=\s?', cl):
+                    calibration['pres'] = cl.split('=')[1].strip()
+    except:
+        return None
+    # Return the calibration:
+    return calibration
 
 class LabJackerSeq(QThread):
     """
@@ -103,7 +133,6 @@ class LabJackerSeq(QThread):
         }
         # The sequence to run. Iinit as None:
         self.seq = None
-
 
     def get_timestamp(self):
         """
@@ -195,7 +224,6 @@ class LabJackerSeq(QThread):
                 return False
         # All fine, return True:
         return True
-
 
     def set_sequence(self):
         """
@@ -337,10 +365,12 @@ class LabJackerUI(QWidget):
     Main QWidget class for the application. Creates the UI, spawns the various
     threads for polling and running the sequence, etc.
     """
-
     def __init__(self):
         # Run parent init first:
         super().__init__()
+        # Defaultr calibration values:
+        self.calibration_default = {'pres': '(5.0221 * v) - 24.036'}
+        self.calibration = None
         # Set the initial working directory to the user home directory:
         self.working_dir = os.path.expanduser('~')
         # Log file location:
@@ -485,6 +515,13 @@ class LabJackerUI(QWidget):
             'ain0_thread': None,
             'ain1_thread': None
         }
+        # Try to get calibration values:
+        calibration = get_calibration()
+        if calibration:
+            self.calibration = calibration
+        else:
+            # Use default values:
+            self.calibration = self.calibration_default
         # Init the UI:
         self.init_ui()
 
@@ -1335,7 +1372,17 @@ class LabJackerUI(QWidget):
             self.status_area[val_str].setText('{0:.05f} V'.format(ain_value))
             # Pressure comes from voltage 1:
             if ain_id == 1:
-                pres_value = (5.0221 * ain_value) - 24.036
+                # set 'v' to ain_value for pressure conversion from
+                # calibration:
+                v = ain_value
+                # try provided calibration:
+                try:
+                    pres_value = eval(self.calibration['pres'])
+                except:
+                    # If there is an issue with provided value, switch to
+                    # defaults:
+                    self.calibration['pres'] = self.calibration_default['pres']
+                    pres_value = eval(self.calibration_default['pres'])
                 self.status[pres_str] = pres_value
                 pres_txt = '{0:.05f} psig'.format(pres_value)
                 self.status_area[val_pres_str].setText(pres_txt)
