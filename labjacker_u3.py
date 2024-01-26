@@ -655,8 +655,10 @@ class LabJackerUI(QWidget):
         # Set the grid spacing:
         header_grid.setSpacing(self.window_properties['grid_spacing'])
         # Calculate a column width:
-        col_width = (self.window_properties['width'] -
-                     (4 * self.window_properties['grid_spacing'])) / 6
+        col_width = round(
+            (self.window_properties['width'] -
+             (4 * self.window_properties['grid_spacing'])) / 6
+        )
         # Set the column widths:
         header_grid.setColumnMinimumWidth(0, col_width * 4)
         header_grid.setColumnMinimumWidth(1, col_width)
@@ -694,8 +696,10 @@ class LabJackerUI(QWidget):
         status_grid = self.status_area['grid']
         status_grid.setSpacing(self.window_properties['grid_spacing'])
         # Calculate a column width:
-        col_width = (self.window_properties['width'] -
-                     (3 * self.window_properties['grid_spacing'])) / 2
+        col_width = round(
+            (self.window_properties['width'] -
+             (3 * self.window_properties['grid_spacing'])) / 2
+        )
         # Set the column width:
         status_grid.setColumnMinimumWidth(0, col_width)
         status_grid.setColumnMinimumWidth(1, col_width)
@@ -924,8 +928,10 @@ class LabJackerUI(QWidget):
         fio_header_grid = self.fio_header_area['grid']
         # Set a column width for the grid:
         fio_header_grid.setSpacing(self.window_properties['grid_spacing'])
-        col_width = (self.window_properties['width'] -
-                     (3 * self.window_properties['grid_spacing'])) / 2
+        col_width = round(
+            (self.window_properties['width'] -
+             (3 * self.window_properties['grid_spacing'])) / 2
+        )
         fio_header_grid.setColumnMinimumWidth(0, col_width)
         # Create a label for the area:
         self.fio_header_area['label'] = QLabel('Valve Status', self)
@@ -952,8 +958,10 @@ class LabJackerUI(QWidget):
         fio_grid = self.fio_area['grid']
         # set a column width:
         fio_grid.setSpacing(self.window_properties['grid_spacing'])
-        col_width = (self.window_properties['width'] -
-                     (4 * self.window_properties['grid_spacing'])) / 3
+        col_width = round(
+            (self.window_properties['width'] -
+             (4 * self.window_properties['grid_spacing'])) / 3
+        )
         fio_grid.setColumnMinimumWidth(0, col_width)
         fio_grid.setColumnMinimumWidth(1, col_width)
         fio_grid.setColumnMinimumWidth(2, col_width)
@@ -1126,8 +1134,10 @@ class LabJackerUI(QWidget):
         seq_header_grid = self.seq_header_area['grid']
         # Set the column width:
         seq_header_grid.setSpacing(self.window_properties['grid_spacing'])
-        col_width = (self.window_properties['width'] -
-                     (4 * self.window_properties['grid_spacing'])) / 6
+        col_width = round(
+            (self.window_properties['width'] -
+             (4 * self.window_properties['grid_spacing'])) / 6
+        )
         seq_header_grid.setColumnMinimumWidth(0, col_width * 4)
         seq_header_grid.setColumnMinimumWidth(1, col_width)
         seq_header_grid.setColumnMinimumWidth(2, col_width)
@@ -1164,8 +1174,10 @@ class LabJackerUI(QWidget):
         seq_grid = self.seq_area['grid']
         seq_grid.setSpacing(self.window_properties['grid_spacing'])
         # Set a column width:
-        col_width = (self.window_properties['width'] -
-                     (2 * self.window_properties['grid_spacing'])) / 1
+        col_width = round(
+            (self.window_properties['width'] -
+             (2 * self.window_properties['grid_spacing'])) / 1
+        )
         seq_grid.setColumnMinimumWidth(0, col_width)
         # Add the log message area:
         self.seq_area['text'] = QTextEdit(self)
