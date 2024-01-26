@@ -2,7 +2,7 @@
 #
 #   p = (2 * v) + 5
 #
-# Where v is the voltage reading from the device
+# Where v is the voltage difference (v1-v0) reading from the device
 # If no value is specified, or if there is a problem reading the specified
 # conversion, then the default value is used:
 #

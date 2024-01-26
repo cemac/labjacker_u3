@@ -334,15 +334,14 @@ class LabJackerPoll(QThread):
     # Define signals used to emit instructions to update temperature and AIN
     # information:
     update_temp = pyqtSignal()
-    update_ain = pyqtSignal(int)
+    update_ain = pyqtSignal()
 
-    def __init__(self, poll_type='temp', poll_int=0.5, poll_id=None):
+    def __init__(self, poll_type='temp', poll_int=0.5):
         # Qthread init:
         QThread.__init__(self)
         # Store information about what is being polled:
         self.poll_type = poll_type
         self.poll_int = poll_int
-        self.poll_id = poll_id
 
     def run(self):
         """
@@ -355,7 +354,7 @@ class LabJackerPoll(QThread):
             if self.poll_type == 'temp':
                 self.update_temp.emit()
             elif self.poll_type == 'ain':
-                self.update_ain.emit(self.poll_id)
+                self.update_ain.emit()
             time.sleep(self.poll_int)
 
 class LabJackerUI(QWidget):
@@ -397,6 +396,7 @@ class LabJackerUI(QWidget):
         self.io_labels = {
             'ain0': 'Voltage 0',
             'ain1': 'Voltage 1',
+            'vd': 'Voltage Diff',
             'pres': 'Pressure',
             'fio4': 'Valve 1',
             'fio5': 'Valve 2',
@@ -454,6 +454,8 @@ class LabJackerUI(QWidget):
             'value_ain0': None,
             'label_ain1': None,
             'value_ain1': None,
+            'label_vd': None,
+            'value_vd': None,
             'label_pres': None,
             'value_pres': None
         }
@@ -504,6 +506,7 @@ class LabJackerUI(QWidget):
             'temp': None,
             'ain0': None,
             'ain1': None,
+            'vd': None,
             'pres': None,
             'fio4': None,
             'fio5': None,
@@ -512,8 +515,7 @@ class LabJackerUI(QWidget):
             'seq_running': False,
             'seq_thread': None,
             'temp_thread': None,
-            'ain0_thread': None,
-            'ain1_thread': None
+            'ain_thread': None
         }
         # Try to get calibration values:
         calibration = get_calibration()
@@ -789,32 +791,45 @@ class LabJackerUI(QWidget):
         status_value_ain0.setTextFormat(Qt.PlainText)
         status_value_ain0.setAlignment(Qt.AlignRight)
         status_grid.addWidget(status_value_ain0, 4, 1)
-        # Create a label for the AIN0 label:
+        # Create a label for the AIN1 label:
         self.status_area['label_ain1'] = QLabel(self.io_labels['ain1'], self)
         status_label_ain1 = self.status_area['label_ain1']
         status_label_ain1.setTextFormat(Qt.PlainText)
         status_label_ain1.setAlignment(Qt.AlignLeft)
         status_label_ain1.setFont(self.fonts['bold'])
         status_grid.addWidget(status_label_ain1, 5, 0)
-        # Create a label for the AIN0 value:
+        # Create a label for the AIN1 value:
         self.status_area['value_ain1'] = QLabel('--', self)
         status_value_ain1 = self.status_area['value_ain1']
         status_value_ain1.setTextFormat(Qt.PlainText)
         status_value_ain1.setAlignment(Qt.AlignRight)
         status_grid.addWidget(status_value_ain1, 5, 1)
+        # Create a label for the voltage diff label:
+        self.status_area['label_vd'] = QLabel(self.io_labels['vd'], self)
+        status_label_vd = self.status_area['label_vd']
+        status_label_vd.setTextFormat(Qt.PlainText)
+        status_label_vd.setAlignment(Qt.AlignLeft)
+        status_label_vd.setFont(self.fonts['bold'])
+        status_grid.addWidget(status_label_vd, 6, 0)
+        # Create a label for the voltage diff value:
+        self.status_area['value_vd'] = QLabel('--', self)
+        status_value_vd = self.status_area['value_vd']
+        status_value_vd.setTextFormat(Qt.PlainText)
+        status_value_vd.setAlignment(Qt.AlignRight)
+        status_grid.addWidget(status_value_vd, 6, 1)
         # Create a label for the Pressure label:
         self.status_area['label_pres'] = QLabel(self.io_labels['pres'], self)
         status_label_pres = self.status_area['label_pres']
         status_label_pres.setTextFormat(Qt.PlainText)
         status_label_pres.setAlignment(Qt.AlignLeft)
         status_label_pres.setFont(self.fonts['bold'])
-        status_grid.addWidget(status_label_pres, 6, 0)
+        status_grid.addWidget(status_label_pres, 7, 0)
         # Create a label for the Pressure value:
         self.status_area['value_pres'] = QLabel('--', self)
         status_value_pres = self.status_area['value_pres']
         status_value_pres.setTextFormat(Qt.PlainText)
         status_value_pres.setAlignment(Qt.AlignRight)
-        status_grid.addWidget(status_value_pres, 6, 1)
+        status_grid.addWidget(status_value_pres, 7, 1)
         # Add the status area to the UI:
         self.layout.addWidget(status_frame)
 
@@ -1291,7 +1306,7 @@ class LabJackerUI(QWidget):
             log_hdr = ''.join(['date,'
                                'sample_name,',
                                'pressure,',
-                               'voltage_0,voltage_1,',
+                               'voltage_0,voltage_1,voltage_diff',
                                'valve_state_1,valve_state_2,',
                                'valve_state_3,valve_state_4\n'])
             # Add the header line to the log file:
@@ -1300,11 +1315,12 @@ class LabJackerUI(QWidget):
         # Open the log file in append mode:
         with open(self.log_file, 'a') as log_file:
             # Define the log message:
-            log_msg = '{0},{1},{2},{3},{4},{5},{6},{7},{8}\n'
+            log_msg = '{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}\n'
             log_msg = log_msg.format(timestamp,
                                      self.sample_name,
                                      self.status['pres'],
                                      self.status['ain0'], self.status['ain1'],
+                                     self.status['vd'],
                                      self.io_states['fio4'][self.status['fio4']],
                                      self.io_states['fio5'][self.status['fio5']],
                                      self.io_states['fio6'][self.status['fio6']],
@@ -1366,42 +1382,60 @@ class LabJackerUI(QWidget):
             self.status['temp'] = None
             self.status_area['value_temp'].setText('--')
 
-    def update_ain(self, ain_id):
+    def update_ain(self, ain_ids=[0, 1]):
         """
         update_ain
 
         Update AIN information in the UI
         """
-        # AIN information based on ain_id:
-        ain_str = 'ain{0}'.format(ain_id)
-        val_str = 'value_ain{0}'.format(ain_id)
+        # For each ain id:
+        for ain_id in ain_ids:
+            # AIN information based on ain_id:
+            ain_str = 'ain{0}'.format(ain_id)
+            val_str = 'value_ain{0}'.format(ain_id)
+            # Try to get AIN information from U3 and update status:
+            try:
+                ain_value = self.u3['dev'].getAIN(ain_id)
+                self.status[ain_str] = ain_value
+                self.status_area[val_str].setText('{0:.05f} V'.format(ain_value))
+            # Or just set status information to empty:
+            except:
+                self.status[ain_str] = None
+                self.status_area[val_str].setText('--')
+        # Voltage diff key values:
+        vd_str = 'vd'
+        val_vd_str = 'value_vd'
+        # Try to get voltage difference, which is ain1 - ain0 (v1 - v0):
+        try:
+            vd = self.status['ain1'] - self.status['ain0']
+            self.status[vd_str] = vd
+            vd_txt = '{0:.05f} V'.format(vd)
+            self.status_area[val_vd_str].setText(vd_txt)
+        except:
+            vd = None
+            self.status[vd_str] = vd
+            self.status_area[val_vd_str].setText('--')
+        # Pressure key values:
         pres_str = 'pres'
         val_pres_str = 'value_pres'
-        # Try to get AIN information from U3 and update status:
-        try:
-            ain_value = self.u3['dev'].getAIN(ain_id)
-            self.status[ain_str] = ain_value
-            self.status_area[val_str].setText('{0:.05f} V'.format(ain_value))
-            # Pressure comes from voltage 1:
-            if ain_id == 1:
-                # set 'v' to ain_value for pressure conversion from
-                # calibration:
-                v = ain_value
-                # try provided calibration:
-                try:
-                    pres_value = eval(self.calibration['pres'])
-                except:
-                    # If there is an issue with provided value, switch to
-                    # defaults:
-                    self.calibration['pres'] = self.calibration_default['pres']
-                    pres_value = eval(self.calibration_default['pres'])
-                self.status[pres_str] = pres_value
-                pres_txt = '{0:.05f} psig'.format(pres_value)
-                self.status_area[val_pres_str].setText(pres_txt)
-        # Or just set status information to empty:
-        except:
-            self.status[ain_str] = None
-            self.status_area[val_str].setText('--')
+        # Pressure comes from voltage diff.
+        # Set 'v' to voltage diff for pressure conversion from calibration:
+        v = vd
+        # If we have a voltage diff value:
+        if v:
+            # try provided calibration:
+            try:
+                pres_value = eval(self.calibration['pres'])
+            except:
+                # If there is an issue with provided value, switch to
+                # defaults:
+                self.calibration['pres'] = self.calibration_default['pres']
+                pres_value = eval(self.calibration_default['pres'])
+            self.status[pres_str] = pres_value
+            pres_txt = '{0:.05f} psig'.format(pres_value)
+            self.status_area[val_pres_str].setText(pres_txt)
+        # No voltage value, set status information to empty:
+        else:
             self.status[pres_str] = None
             self.status_area[val_pres_str].setText('--')
 
@@ -1438,16 +1472,11 @@ class LabJackerUI(QWidget):
         temp_thread = self.status['temp_thread']
         temp_thread.update_temp.connect(self.update_temp)
         temp_thread.start()
-        # AIN0 monitoring thread:
-        self.status['ain0_thread'] = LabJackerPoll(poll_type='ain', poll_id=0)
-        ain0_thread = self.status['ain0_thread']
-        ain0_thread.update_ain.connect(self.update_ain)
-        ain0_thread.start()
-        # AIN1 monitoring thread:
-        self.status['ain1_thread'] = LabJackerPoll(poll_type='ain', poll_id=1)
-        ain1_thread = self.status['ain1_thread']
-        ain1_thread.update_ain.connect(self.update_ain)
-        ain1_thread.start()
+        # AIN monitoring thread:
+        self.status['ain_thread'] = LabJackerPoll(poll_type='ain')
+        ain_thread = self.status['ain_thread']
+        ain_thread.update_ain.connect(self.update_ain)
+        ain_thread.start()
         # display the application:
         self.show()
 
